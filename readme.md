@@ -1,0 +1,45 @@
+#SamReadExtract [BIOINFORMATICS] - Extracting read specific information from a bam file.
+
+Currently the bam format is the format of choice for saving read information from NGS sequencing runs. Using samtools, the suite of software written to handle bam/sam files, one can easily extract read information from a large bam file in seconds. You just type
+~~~
+samtools view chr1:100 - 10000
+~~~
+and thats it!
+
+This works great when you want to find the reads which map to a certain region in the genome. But sometimes (mainly when I play with multi mapped reads) I want to do the opposite. i.e. Find out the genomic regions where one or more reads map to. It turns out (at least as far as I know), there is no straight forward way of going it.
+
+**This is my attempt to solve the problem.**
+
+**Design requirements:**
+1. Fast read information retrieval
+2. Small data / index files
+
+## The process
+### Step 1. Creating the index file and the read centered data file using makeReadIndex.py.
+~~~
+samtools view yourbam.bam | python makeReadIndex.py ReadKey.txt Index.db
+
+files:
+yourbam.bam - multimapped bam file
+ReadKey.txt - main key centered data file
+Index.db - sqlite3 database containing the index
+
+~~~
+Performance - 2.5 minutes to process a 580MB bam file and produces on a two core mac.
+
+### Step 2: Gzip the main data file
+~~~
+gzip ReadKey.txt 
+~~~
+(2 mins for compression)
+
+*I could have added this step to step 1, but sometimes a plain text data file is needed to eyeball the data.*
+
+### Step 3: Find multimap read locations.
+You can specify a single read or a comma seperated list of reads.
+
+~~~
+python getReads.py ReadKey.txt.gz Index.db readID
+~~~
+
+
